@@ -39,7 +39,7 @@ namespace itk {
  * \author Richard Beare
  */
 
-template<class TInputImage, class TOutputImage, class TFilter>
+template<class TInputImage, class TOutputImage, class TFilter, bool TFilterIsThreaded=false>
 class ITK_EXPORT GenericSeparableBoxImageFilter : 
 public BoxImageFilter<TInputImage, TOutputImage>
 {
@@ -83,6 +83,8 @@ protected:
   ~GenericSeparableBoxImageFilter() {};
 
   void GenerateData();
+  void ThreadedGenerateData(const RegionType& outputRegionForThread,
+                            int threadId );
 
 private:
   GenericSeparableBoxImageFilter(const Self&); //purposely not implemented

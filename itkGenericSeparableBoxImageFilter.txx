@@ -19,15 +19,25 @@
 #define __itkGenericSeparableBoxImageFilter_txx
 
 #include "itkGenericSeparableBoxImageFilter.h"
+#include "itkCastImageFilter.h"
+#include "itkExtractImageFilter.h"
 #include "itkProgressAccumulator.h"
 
 namespace itk {
 
-template <class TInputImage, class TOutputImage, class TFilter>
+template <class TInputImage, class TOutputImage, class TFilter, bool TFilterIsThreaded>
 void
-GenericSeparableBoxImageFilter<TInputImage, TOutputImage, TFilter>
+GenericSeparableBoxImageFilter<TInputImage, TOutputImage, TFilter, TFilterIsThreaded>
 ::GenerateData()
 {
+
+  if( !TFilterIsThreaded )
+    {
+    // call threaded implementation
+    Superclass::GenerateData();
+    return;
+    }
+
   this->AllocateOutputs();
   
   // copy the input image to be sure that the internal filters won't destroy it by
@@ -37,6 +47,7 @@ GenericSeparableBoxImageFilter<TInputImage, TOutputImage, TFilter>
   copy->SetInput( this->GetInput() );
   copy->SetInPlace( false );
   copy->SetReleaseDataFlag( true );
+  copy->SetNumberOfThreads( this->GetNumberOfThreads() );
 
   // create the pipeline
   ProgressAccumulator::Pointer progress = ProgressAccumulator::New();
@@ -64,6 +75,73 @@ GenericSeparableBoxImageFilter<TInputImage, TOutputImage, TFilter>
   filters[ImageDimension-1]->Update();
   this->GraftOutput( filters[ImageDimension-1]->GetOutput() );
 
+}
+
+
+template <class TInputImage, class TOutputImage, class TFilter, bool TFilterIsThreaded>
+void
+GenericSeparableBoxImageFilter<TInputImage, TOutputImage, TFilter, TFilterIsThreaded>
+::ThreadedGenerateData(const RegionType& outputRegionForThread, int threadId )
+{
+  ProgressAccumulator::Pointer progress = ProgressAccumulator::New();
+  progress->SetMiniPipelineFilter(this);
+  
+  // extract the input region required for this thread. It is enlarged by the radius
+  // of the requested box to ensure that the filters have enough input to work properly
+  RegionType inputRegion = outputRegionForThread;
+  inputRegion.PadByRadius( this->GetRadius() );
+  inputRegion.Crop(this->GetOutput()->GetLargestPossibleRegion() );
+  
+  typedef itk::ExtractImageFilter< InputImageType, InputImageType> CopyType;
+  typename CopyType::Pointer copy = CopyType::New();
+  copy->SetInput( this->GetInput() );
+  copy->SetReleaseDataFlag( true );
+  copy->SetNumberOfThreads( 1 );
+  copy->SetExtractionRegion( inputRegion );
+  if( threadId == 0 )
+    {
+    progress->RegisterInternalFilter( copy, 1.0/(ImageDimension+2) );
+    }
+    
+  typename FilterType::Pointer filters[ImageDimension];
+  for( unsigned i = 0; i < ImageDimension; i++ )
+    {
+    filters[i] = FilterType::New();
+    filters[i]->ReleaseDataFlagOn();
+    filters[i]->SetNumberOfThreads( 1 );
+    RadiusType rad;
+    rad.Fill(0);
+    rad[i] = this->GetRadius()[i];
+    filters[i]->SetRadius( rad );
+    if( i > 0 ) 
+      {
+      filters[i]->SetInput( filters[i-1]->GetOutput() );
+      if( threadId == 0 )
+        {
+        progress->RegisterInternalFilter( filters[i], 1.0/(ImageDimension+2) );
+        }
+      }
+    }
+  filters[0]->SetInput( copy->GetOutput() );
+  filters[ImageDimension-1]->GetOutput()->SetRequestedRegion( outputRegionForThread );
+  filters[ImageDimension-1]->Update();
+
+  ImageRegionConstIterator<OutputImageType> inIt
+    = ImageRegionConstIterator<OutputImageType>( filters[ImageDimension-1]->GetOutput(), outputRegionForThread );
+  ImageRegionIterator<OutputImageType> outIt
+    = ImageRegionIterator<OutputImageType>( this->GetOutput(), outputRegionForThread );
+  outIt.GoToBegin(); 
+  inIt.GoToBegin(); 
+
+  float lastPart = 1.0/(ImageDimension+2);
+  ProgressReporter progress2(this, threadId, outputRegionForThread.GetNumberOfPixels(), 20, 1-lastPart, lastPart);
+  while( !outIt.IsAtEnd() )
+    {
+    outIt.Set( inIt.Get() );
+    ++outIt;
+    ++inIt;
+    progress2.CompletedPixel();
+    }
 }
 
 }
