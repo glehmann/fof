@@ -31,7 +31,7 @@ int main(int argc, char * argv[])
   
   typedef itk::MovingHistogramErodeImageFilter< IType, IType, itk::FlatStructuringElement< dim > > ErodeType;
   
-  typedef itk::GenericSeparableBoxImageFilter< IType, IType, ErodeType > FilterType;
+  typedef itk::GenericSeparableBoxImageFilter< IType, ErodeType > FilterType;
   FilterType::Pointer filter = FilterType::New();
   filter->SetInput( reader->GetOutput() );
   filter->SetRadius( atoi(argv[3]) );

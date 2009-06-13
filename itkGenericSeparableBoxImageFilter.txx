@@ -25,9 +25,9 @@
 
 namespace itk {
 
-template <class TInputImage, class TOutputImage, class TFilter, bool TFilterIsThreaded>
+template <class TImage, class TFilter, bool TFilterIsThreaded>
 void
-GenericSeparableBoxImageFilter<TInputImage, TOutputImage, TFilter, TFilterIsThreaded>
+GenericSeparableBoxImageFilter<TImage, TFilter, TFilterIsThreaded>
 ::GenerateData()
 {
 
@@ -69,9 +69,9 @@ GenericSeparableBoxImageFilter<TInputImage, TOutputImage, TFilter, TFilterIsThre
 }
 
 
-template <class TInputImage, class TOutputImage, class TFilter, bool TFilterIsThreaded>
+template <class TImage, class TFilter, bool TFilterIsThreaded>
 void
-GenericSeparableBoxImageFilter<TInputImage, TOutputImage, TFilter, TFilterIsThreaded>
+GenericSeparableBoxImageFilter<TImage, TFilter, TFilterIsThreaded>
 ::ThreadedGenerateData(const RegionType& outputRegionForThread, int threadId )
 {
   ProgressAccumulator::Pointer progress = ProgressAccumulator::New();
@@ -83,7 +83,7 @@ GenericSeparableBoxImageFilter<TInputImage, TOutputImage, TFilter, TFilterIsThre
   inputRegion.PadByRadius( this->GetRadius() );
   inputRegion.Crop(this->GetOutput()->GetLargestPossibleRegion() );
   
-  typedef itk::ExtractImageFilter< InputImageType, InputImageType> CopyType;
+  typedef itk::ExtractImageFilter< ImageType, ImageType> CopyType;
   typename CopyType::Pointer copy = CopyType::New();
   copy->SetInput( this->GetInput() );
   copy->SetReleaseDataFlag( true );
@@ -117,10 +117,10 @@ GenericSeparableBoxImageFilter<TInputImage, TOutputImage, TFilter, TFilterIsThre
   filters[ImageDimension-1]->GetOutput()->SetRequestedRegion( outputRegionForThread );
   filters[ImageDimension-1]->Update();
 
-  ImageRegionConstIterator<OutputImageType> inIt
-    = ImageRegionConstIterator<OutputImageType>( filters[ImageDimension-1]->GetOutput(), outputRegionForThread );
-  ImageRegionIterator<OutputImageType> outIt
-    = ImageRegionIterator<OutputImageType>( this->GetOutput(), outputRegionForThread );
+  ImageRegionConstIterator<ImageType> inIt
+    = ImageRegionConstIterator<ImageType>( filters[ImageDimension-1]->GetOutput(), outputRegionForThread );
+  ImageRegionIterator<ImageType> outIt
+    = ImageRegionIterator<ImageType>( this->GetOutput(), outputRegionForThread );
   outIt.GoToBegin(); 
   inIt.GoToBegin(); 
 

@@ -39,14 +39,14 @@ namespace itk {
  * \author Richard Beare
  */
 
-template<class TInputImage, class TOutputImage, class TFilter, bool TFilterIsThreaded=false>
+template<class TImage, class TFilter, bool TFilterIsThreaded=false>
 class ITK_EXPORT GenericSeparableBoxImageFilter : 
-public BoxImageFilter<TInputImage, TOutputImage>
+public BoxImageFilter<TImage, TImage>
 {
 public:
   /** Standard class typedefs. */
   typedef GenericSeparableBoxImageFilter            Self;
-  typedef BoxImageFilter<TInputImage,TOutputImage>  Superclass;
+  typedef BoxImageFilter<TImage,TImage>             Superclass;
   typedef SmartPointer<Self>                        Pointer;
   typedef SmartPointer<const Self>                  ConstPointer;
   
@@ -58,25 +58,20 @@ public:
                BoxImageFilter);
  
   /** Image related typedefs. */
-  typedef TInputImage                               InputImageType;
-  typedef typename TInputImage::RegionType          RegionType;
-  typedef typename TInputImage::SizeType            SizeType;
-  typedef typename TInputImage::IndexType           IndexType;
-  typedef typename TInputImage::PixelType           PixelType;
-  typedef typename TInputImage::OffsetType          OffsetType;
+  typedef TImage                                    ImageType;
+  typedef typename TImage::RegionType               RegionType;
+  typedef typename TImage::SizeType                 SizeType;
+  typedef typename TImage::IndexType                IndexType;
+  typedef typename TImage::PixelType                PixelType;
+  typedef typename TImage::OffsetType               OffsetType;
   
-  typedef TOutputImage                              OutputImageType;
-  typedef typename TOutputImage::PixelType          OutputPixelType;
-
   typedef TFilter FilterType;
-  typedef CastImageFilter< InputImageType, OutputImageType >
-                                                    CastType;
   
   /** Image related typedefs. */
   itkStaticConstMacro(ImageDimension, unsigned int,
-                      TInputImage::ImageDimension);
+                      TImage::ImageDimension);
   /** n-dimensional Kernel radius. */
-  typedef typename TInputImage::SizeType            RadiusType;
+  typedef typename TImage::SizeType            RadiusType;
 
 protected:
   GenericSeparableBoxImageFilter() {};
