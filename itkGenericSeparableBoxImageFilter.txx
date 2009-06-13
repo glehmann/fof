@@ -40,15 +40,6 @@ GenericSeparableBoxImageFilter<TInputImage, TOutputImage, TFilter, TFilterIsThre
 
   this->AllocateOutputs();
   
-  // copy the input image to be sure that the internal filters won't destroy it by
-  // running in place
-  typedef itk::CastImageFilter< InputImageType, InputImageType> CopyType;
-  typename CopyType::Pointer copy = CopyType::New();
-  copy->SetInput( this->GetInput() );
-  copy->SetInPlace( false );
-  copy->SetReleaseDataFlag( true );
-  copy->SetNumberOfThreads( this->GetNumberOfThreads() );
-
   // create the pipeline
   ProgressAccumulator::Pointer progress = ProgressAccumulator::New();
   progress->SetMiniPipelineFilter(this);
@@ -69,7 +60,7 @@ GenericSeparableBoxImageFilter<TInputImage, TOutputImage, TFilter, TFilterIsThre
       progress->RegisterInternalFilter( filters[i], 1.0/ImageDimension );
       }
     }
-  filters[0]->SetInput( copy->GetOutput() );
+  filters[0]->SetInput( this->GetInput() );
 
   filters[ImageDimension-1]->GraftOutput( this->GetOutput() ); 
   filters[ImageDimension-1]->Update();
